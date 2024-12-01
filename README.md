@@ -25,7 +25,7 @@ To use this device (on already configured devices) you can try the following exa
 ```
 $ git clone https://github.com/tinkerator/tplinky.git
 $ cd tplinky
-$ go build examples/tple
+$ go build examples/tple.go
 $ ./tple --scan=192.168.1.0/24
 2024/12/01 12:53:33 192.168.1.110: F0:A7:31:xx:xx:xx on=true  "what watt" #children=0
 2024/12/01 12:53:33 192.168.1.135: 50:91:E3:yy:yy:yy on=false  "outside glow" #children=0
