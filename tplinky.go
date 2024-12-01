@@ -61,6 +61,16 @@ type ActionType struct {
 	Type int `json:"type"`
 }
 
+// Child is a structure containing sub-plug information. This is
+// present on the EP40(US) device.
+type Child struct {
+	ID         string     `json:"id",omitempty`
+	State      int        `json:"state"`
+	Alias      string     `json:"alias",omitempty`
+	OnTime     int        `json:"on_time"`
+	NextAction ActionType `json:"next_action",omitempty`
+}
+
 // RawNull is used to ensure a null is in the output.
 var RawNull = json.RawMessage(`null`)
 
@@ -117,6 +127,11 @@ type Sysinfo struct {
 	OEMID      string     `json:"oemId"`
 	NextAction ActionType `json:"next_action"`
 	ErrCode    int        `json:"err_code"`
+	Status     string     `json:"status,omitempty"`
+	OBDSrc     string     `json:"obd_src,omitempty"`
+	MicType    string     `json:"mic_type,omitempty"`
+	NTCState   int        `json:"ntc_state"`
+	Children   []Child    `json:"children,omitempty"`
 }
 
 // SystemResponse wraps Sysinfo.
