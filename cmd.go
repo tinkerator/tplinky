@@ -22,6 +22,20 @@ func (c *Conn) GetStatus() (*Sysinfo, error) {
 	if r.System == nil {
 		return nil, errors.New("response did not contain sysinfo")
 	}
+	// Quirk of this API. If the connected device has more than
+	// one socket, alias the returned *Sysinfo field RelayState to
+	// the logical OR of all of the socket states. Empirically,
+	// this value is always 0 in such systems, and does not change
+	// if you attempt to set it directly.
+	if len(r.System.GetSysinfo.Children) != 0 {
+		r.System.GetSysinfo.RelayState = 0
+		for _, child := range r.System.GetSysinfo.Children {
+			if child.State != 0 {
+				r.System.GetSysinfo.RelayState = 1
+				break
+			}
+		}
+	}
 	return r.System.GetSysinfo, nil
 }
 
@@ -85,11 +99,28 @@ func Scan(network string, timeout time.Duration) (result map[string]*Sysinfo) {
 
 // Enable attempts to force the power-on state of a tplink device.
 func (c *Conn) Enable(on bool) error {
+	current, err := c.GetStatus()
+	if err != nil {
+		return err
+	}
+	if len(current.Children) != 0 {
+		// For a power strip, force all sockets to desired state.
+		sockets := make([]int, len(current.Children))
+		for i := range sockets {
+			sockets[i] = i
+		}
+		return c.EnableSocket(on, sockets...)
+	}
 	var en = 0
 	if on {
 		en = 1
 	}
-	_, err := c.Send(Control{
+	if current.RelayState == en {
+		// No need to do anything if device is currently in
+		// desired state.
+		return nil
+	}
+	_, err = c.Send(Control{
 		System: &SystemCommands{
 			SetRelayState: &SystemCommandParameters{
 				State: &en,
@@ -106,16 +137,18 @@ func (c *Conn) EnableSocket(on bool, sockets ...int) error {
 	if err != nil {
 		return err
 	}
+	var en = 0
+	if on {
+		en = 1
+	}
 	var children []string
 	for _, i := range sockets {
 		if i < 0 || i >= len(current.Children) {
 			return fmt.Errorf("socket=%d not found in %d sockets", i, len(current.Children))
 		}
-		children = append(children, current.Children[i].ID)
-	}
-	var en = 0
-	if on {
-		en = 1
+		if en != current.Children[i].State {
+			children = append(children, current.Children[i].ID)
+		}
 	}
 	for i := range children {
 		_, err = c.Send(Control{
