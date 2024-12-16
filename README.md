@@ -56,6 +56,9 @@ $ ./tple --device=192.168.1.157
 2024/12/15 18:46:20 192.168.1.157: 50:91:E3:yy:yy:yy on=[true true]  "power couple" #children=2
 ```
 
+Without specifying a socket for the action, the action will affect all
+of the socket relay states.
+
 To set the enabled state of the sockets individually, specify the
 index of the sockets with the `--sockets=a,b` argument. In the above
 example, there are two scockets, indexed `0` and `1`. For example, to
