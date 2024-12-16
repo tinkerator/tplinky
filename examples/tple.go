@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"zappem.net/pub/net/tplinky"
@@ -22,12 +24,20 @@ var (
 	on      = flag.Bool("on", false, "set the device to enabled")
 	off     = flag.Bool("off", false, "set the device to disabled")
 	stat    = flag.Bool("status", true, "get device(s) status")
+	sockets = flag.String("sockets", "", "comma separated socket indexes")
 )
 
 // status converts a device Sysinfo status into a string.
 func status(dev *tplinky.Sysinfo) string {
 	if *verbose {
 		return fmt.Sprintf("%#v", dev)
+	}
+	if len(dev.Children) != 0 {
+		var relays []bool
+		for _, x := range dev.Children {
+			relays = append(relays, x.State != 0)
+		}
+		return fmt.Sprintf("%s on=%v %q #children=%d", dev.Mac, relays, dev.Alias, len(dev.Children))
 	}
 	return fmt.Sprintf("%s on=%-5v %q #children=%d", dev.Mac, dev.RelayState != 0, dev.Alias, len(dev.Children))
 }
@@ -46,6 +56,22 @@ func main() {
 		os.Exit(0)
 	}
 
+	var indexes []int
+	dups := make(map[int]bool)
+	if *sockets != "" {
+		for _, s := range strings.Split(*sockets, ",") {
+			n, err := strconv.Atoi(s)
+			if err != nil {
+				log.Fatalf("unrecognized socket index=%q from %q: %v", s, *sockets, err)
+			}
+			if dups[n] {
+				log.Fatalf("duplicate socket %d vs %v", n, indexes)
+			}
+			dups[n] = true
+			indexes = append(indexes, n)
+		}
+	}
+
 	dev, err := tplinky.DialTimeout(*device, *timeout)
 	if err != nil {
 		log.Fatalf("failed to connect to %q: %v", *device, err)
@@ -56,11 +82,19 @@ func main() {
 		if *off {
 			log.Fatal("use --on or --off not both")
 		}
-		if err := dev.Enable(true); err != nil {
+		if len(indexes) != 0 {
+			if err := dev.EnableSocket(true, indexes...); err != nil {
+				log.Fatalf("failed to turn on device %q(sockets%v): %v", *device, indexes, err)
+			}
+		} else if err := dev.Enable(true); err != nil {
 			log.Fatalf("failed to turn on device %q: %v", *device, err)
 		}
 	} else if *off {
-		if err := dev.Enable(false); err != nil {
+		if len(indexes) != 0 {
+			if err := dev.EnableSocket(false, indexes...); err != nil {
+				log.Fatalf("failed to turn off device %q(sockets%v): %v", *device, indexes, err)
+			}
+		} else if err := dev.Enable(false); err != nil {
 			log.Fatalf("failed to turn off device %q: %v", *device, err)
 		}
 	}

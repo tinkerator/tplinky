@@ -71,6 +71,12 @@ type Child struct {
 	NextAction ActionType `json:"next_action",omitempty`
 }
 
+// ControlContext is a control structure used to select power strip
+// children.
+type ControlContext struct {
+	ChildIDs []string `json:"child_ids,omitempty"`
+}
+
 // RawNull is used to ensure a null is in the output.
 var RawNull = json.RawMessage(`null`)
 
@@ -94,7 +100,8 @@ type SystemCommands struct {
 //
 //	https://github.com/softScheck/tplink-smartplug/blob/master/tplink-smarthome-commands.txt
 type Control struct {
-	System *SystemCommands `json:"system,omitempty"`
+	Context *ControlContext `json:"context,omitempty"`
+	System  *SystemCommands `json:"system,omitempty"`
 }
 
 // GetSysinfo holds the empty request for obtaining Sysinfo from the

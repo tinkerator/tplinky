@@ -3,6 +3,7 @@ package tplinky
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -95,5 +96,41 @@ func (c *Conn) Enable(on bool) error {
 			},
 		},
 	})
+	return err
+}
+
+// EnableSocket attempts to force the power-on state of the specified
+// sockets of a power strip.
+func (c *Conn) EnableSocket(on bool, sockets ...int) error {
+	current, err := c.GetStatus()
+	if err != nil {
+		return err
+	}
+	var children []string
+	for _, i := range sockets {
+		if i < 0 || i >= len(current.Children) {
+			return fmt.Errorf("socket=%d not found in %d sockets", i, len(current.Children))
+		}
+		children = append(children, current.Children[i].ID)
+	}
+	var en = 0
+	if on {
+		en = 1
+	}
+	for i := range children {
+		_, err = c.Send(Control{
+			Context: &ControlContext{
+				ChildIDs: children[i : i+1],
+			},
+			System: &SystemCommands{
+				SetRelayState: &SystemCommandParameters{
+					State: &en,
+				},
+			},
+		})
+		if err != nil {
+			break
+		}
+	}
 	return err
 }
