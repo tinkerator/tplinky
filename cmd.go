@@ -167,3 +167,56 @@ func (c *Conn) EnableSocket(on bool, sockets ...int) error {
 	}
 	return err
 }
+
+// ErrTimeFailed is returned when a call to obtain the time failed.
+var ErrTimeFailed = errors.New("get_time failed")
+
+// GetTime reads the time from the device.
+func (c *Conn) GetTime() (time.Time, error) {
+	resp, err := c.Send(Control{
+		Time: &DevTime{
+			GetTime: &RawNull,
+		},
+	})
+	t := time.Now()
+	if err != nil {
+		return t, err
+	}
+	vs := resp.Time
+	if vs == nil || vs.GetTime == nil {
+		return t, ErrTimeFailed
+	}
+	x := vs.GetTime
+	t = time.Date(x.Year, time.Month(x.Month), x.MDay, x.Hour, x.Min, x.Sec, 0, t.Location())
+	return t, err
+}
+
+// SetTime reads the time from the device.
+func (c *Conn) SetTime(t time.Time) error {
+	_, err := c.Send(Control{
+		Time: &DevTime{
+			SetTimeZone: &TimeZone{
+				Year:  t.Year(),
+				Month: int(t.Month()),
+				MDay:  t.Day(),
+				Hour:  t.Hour(),
+				Min:   t.Minute(),
+				Sec:   t.Second(),
+				Index: 90,
+			},
+		},
+	})
+	return err
+}
+
+// SetAlias sets the alias name for the device.
+func (c *Conn) SetAlias(name string) error {
+	_, err := c.Send(Control{
+		System: &SystemCommands{
+			SetDevAlias: &SystemCommandParameters{
+				Alias: &name,
+			},
+		},
+	})
+	return err
+}

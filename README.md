@@ -29,11 +29,16 @@ $ cd tplinky
 $ go build examples/tple.go
 $ ./tple --scan=192.168.1.0/24
 2024/12/01 12:53:33 192.168.1.110: F0:A7:31:xx:xx:xx on=true  "what watt" #children=0
-2024/12/01 12:53:33 192.168.1.135: 50:91:E3:yy:yy:yy on=false  "outside glow" #children=0
+2024/12/01 12:53:33 192.168.1.135: 50:91:E3:yy:yy:yy on=false  "no glow" #children=0
 ```
 
 The `"..."` names are the aliases for the plugs that the user can
-change.
+change. You can set this alias as follows:
+
+```
+$ ./tple --device=192.168.1.135 --alias="outside glow"
+2024/12/01 13:00:26 192.168.1.135: 50:91:E3:yy:yy:yy on=false  "outside glow" #children=0
+```
 
 Next, to turn on the (`"outside glow"`) lights:
 
@@ -76,6 +81,24 @@ $ ./tple --device=192.168.1.157 --sockets=0,1 --on
 2024/12/15 18:46:30 192.168.1.157: 50:91:E3:yy:yy:yy on=[true true]  "power couple" #children=2
 ```
 
+The devices track time, and `tple` can initialize and read that
+time. Note, the time is only settable with one second of precision, so
+responses from the device are going to be up to one second wrong.
+
+To update the time to be roughly the current time:
+
+```
+$ ./tple --device=192.168.1.157 --set-now
+2024/12/17 06:30:53 device time is 2024-12-17 06:30:53 -0800 PST
+```
+
+To read the device's time:
+
+```
+$ ./tple --device=192.168.1.157 --time
+2024/12/17 06:32:29 device time is 2024-12-17 06:32:29 -0800 PST
+```
+
 ## TODO
 
 Add some support for initializing the device from a factory
@@ -91,15 +114,9 @@ $ sudo -s
 
 JSON to command it to join your local network (after the last command
 here, the device will stop responding to the above ESSID) from a
-Raspberry Pi. The first of these shows how to use the Linux shell
-`date` command to format the date in the way the device wants to hear
-about it. (I've not figured out the index map for time zones, so `90`
-is a guess!):
+Raspberry Pi:
 
 ```
-$(date +'{"time":{"set_timezone":{"year":%Y,"month":%-m,"mday":%-d,"hour":%-H,"min":%-M,"sec":%-S,"index":90}}}')
-{"time":{"get_time":null}}
-{"system":{"set_dev_alias":{"alias":"power source"}}}
 {"netif":{"set_stainfo":{"ssid":"MYSSID","password":"BigSecret","key_type":3}}}
 ```
 

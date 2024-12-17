@@ -25,6 +25,9 @@ var (
 	off     = flag.Bool("off", false, "set the device to disabled")
 	stat    = flag.Bool("status", true, "get device(s) status")
 	sockets = flag.String("sockets", "", "comma separated socket indexes")
+	getTime = flag.Bool("time", false, "request time from --device")
+	setNow  = flag.Bool("set-now", false, "set time on --device from time.Now()")
+	alias   = flag.String("alias", "", "set alias for --device")
 )
 
 // status converts a device Sysinfo status into a string.
@@ -78,6 +81,30 @@ func main() {
 	}
 	defer dev.Close()
 
+	if *alias != "" {
+		if err := dev.SetAlias(*alias); err != nil {
+			log.Fatalf("unable to set device alias: %v", err)
+		}
+		s, err := dev.GetStatus()
+		if err != nil {
+			log.Fatalf("unable to get status: %v", err)
+		}
+		log.Printf("%s: %s", *device, status(s))
+		return
+	}
+	if *setNow {
+		if err := dev.SetTime(time.Now()); err != nil {
+			log.Fatalf("unable to set current time: %v", err)
+		}
+	}
+	if *getTime || *setNow {
+		t, err := dev.GetTime()
+		if err != nil {
+			log.Fatalf("unable to get time: %v", err)
+		}
+		log.Printf("device time is %v", t)
+		return
+	}
 	if *on {
 		if *off {
 			log.Fatal("use --on or --off not both")

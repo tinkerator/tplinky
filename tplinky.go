@@ -80,6 +80,32 @@ type ControlContext struct {
 // RawNull is used to ensure a null is in the output.
 var RawNull = json.RawMessage(`null`)
 
+// TimeZone holds the time, date and timezone information.
+type TimeZone struct {
+	Year    int    `json:"year,omitempty"`
+	Month   int    `json:"month,omitempty"`
+	MDay    int    `json:"mday,omitempty"`
+	Hour    int    `json:"hour"`
+	Min     int    `json:"min"`
+	Sec     int    `json:"sec"`
+	Index   int    `json:"index,omitempty"`
+	ErrCode int    `json:"err_code,omitempty"`
+	ErrMsg  string `json:"err_msg,omitempty"`
+}
+
+// DevTime is used for time related commmands.
+type DevTime struct {
+	GetTime     *json.RawMessage `json:"get_time,omitempty"`
+	GetTimeZone *json.RawMessage `json:"get_timezone,omitempty"`
+	SetTimeZone *TimeZone        `json:"set_timezone,omitempty"`
+}
+
+// ResponseTime is used for time related commmands.
+type TimeResponse struct {
+	GetTime     *TimeZone `json:"get_time,omitempty"`
+	GetTimeZone *TimeZone `json:"get_timezone,omitempty"`
+}
+
 // SystemCommands holds a superset of the command structure for
 // communicating with the tp-link smartplug device.
 type SystemCommands struct {
@@ -102,6 +128,7 @@ type SystemCommands struct {
 type Control struct {
 	Context *ControlContext `json:"context,omitempty"`
 	System  *SystemCommands `json:"system,omitempty"`
+	Time    *DevTime        `json:"time,omitempty"`
 }
 
 // GetSysinfo holds the empty request for obtaining Sysinfo from the
@@ -149,6 +176,7 @@ type SystemResponse struct {
 // Response is a structure containing the TP-link control response.
 type Response struct {
 	System *SystemResponse `json:"system,omitempty"`
+	Time   *TimeResponse   `json:"time,omitempty"`
 }
 
 // Conn holds an open connection to a TP-Link device. It uses the port
