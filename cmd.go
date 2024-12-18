@@ -220,3 +220,36 @@ func (c *Conn) SetAlias(name string) error {
 	})
 	return err
 }
+
+// FactoryReset resets the device to its factory default
+// settings. This will make the device forget its WiFi settings and
+// revert it to broadcasting a self-generated WiFi network:
+// `"TP-LINK_Smart Plug_XXXX"`.
+func (c *Conn) FactoryReset() error {
+	one := 1
+	_, err := c.Send(Control{
+		System: &SystemCommands{
+			Reset: &SystemCommandParameters{
+				Delay: &one,
+			},
+		},
+	})
+	return err
+}
+
+// SetWiFi sets the ssid and password for the preferred
+// network. Performing this command will cause the device to
+// disconnect from the current network, and connect with the provided
+// parameters.
+func (c *Conn) SetWiFi(ssid, password string) error {
+	_, err := c.Send(Control{
+		NetIf: &NetIfCommands{
+			SetStaInfo: &StaInfoParameters{
+				SSID:     ssid,
+				Password: password,
+				KeyType:  3,
+			},
+		},
+	})
+	return err
+}

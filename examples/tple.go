@@ -17,17 +17,20 @@ import (
 )
 
 var (
-	device  = flag.String("device", "", "IP address of target device")
-	scan    = flag.String("scan", "", "summarize state of devices on network: <ip>/<bits>")
-	timeout = flag.Duration("timeout", 2*time.Second, "how long to wait for device")
-	verbose = flag.Bool("v", false, "list all status info from devices")
-	on      = flag.Bool("on", false, "set the device to enabled")
-	off     = flag.Bool("off", false, "set the device to disabled")
-	stat    = flag.Bool("status", true, "get device(s) status")
-	sockets = flag.String("sockets", "", "comma separated socket indexes")
-	getTime = flag.Bool("time", false, "request time from --device")
-	setNow  = flag.Bool("set-now", false, "set time on --device from time.Now()")
-	alias   = flag.String("alias", "", "set alias for --device")
+	device   = flag.String("device", "", "IP address of target device")
+	scan     = flag.String("scan", "", "summarize state of devices on network: <ip>/<bits>")
+	timeout  = flag.Duration("timeout", 2*time.Second, "how long to wait for device")
+	verbose  = flag.Bool("v", false, "list all status info from devices")
+	on       = flag.Bool("on", false, "set the device to enabled")
+	off      = flag.Bool("off", false, "set the device to disabled")
+	stat     = flag.Bool("status", true, "get device(s) status")
+	sockets  = flag.String("sockets", "", "comma separated socket indexes")
+	getTime  = flag.Bool("time", false, "request time from --device")
+	setNow   = flag.Bool("set-now", false, "set time on --device from time.Now()")
+	alias    = flag.String("alias", "", "set alias for --device")
+	factory  = flag.Bool("factory-reset", false, "factory reset --device")
+	ssid     = flag.String("ssid", "", "sets the WiFi network for --device to connect to")
+	password = flag.String("password", "", "password to connect to --ssid network")
 )
 
 // status converts a device Sysinfo status into a string.
@@ -80,6 +83,28 @@ func main() {
 		log.Fatalf("failed to connect to %q: %v", *device, err)
 	}
 	defer dev.Close()
+
+	if *ssid != "" {
+		if err := dev.SetWiFi(*ssid, *password); err != nil {
+			log.Fatalf("unable to set WiFi to %q", *ssid)
+		}
+		log.Printf("reconnect to device via %q WiFi network", *ssid)
+		return
+	}
+
+	if *factory {
+		s, err := dev.GetStatus()
+		if err != nil {
+			log.Fatalf("unable to get status: %v", err)
+		}
+		if err := dev.FactoryReset(); err != nil {
+			log.Fatalf("failed to factory reset device: %v", err)
+		}
+		log.Printf("factory resetting device %q (%s)...", s.Alias, *device)
+		sub := s.Mac[len(s.Mac)-5:]
+		log.Printf("look for WiFi SSID: 'TP-Link_Smart Plug_%s%s'", sub[0:2], sub[3:])
+		return
+	}
 
 	if *alias != "" {
 		if err := dev.SetAlias(*alias); err != nil {

@@ -121,6 +121,18 @@ type SystemCommands struct {
 	SetDevLocation *DevLocation             `json:"set_dev_location,omitempty"`
 }
 
+// StaInfoParameters holds the arguments to the set_stainfo command.
+type StaInfoParameters struct {
+	SSID     string `json:"ssid"`
+	Password string `json:"password,omitempty"`
+	KeyType  int    `json:"key_type,omitempty"`
+}
+
+// NetIfCommands holds net interface commands
+type NetIfCommands struct {
+	SetStaInfo *StaInfoParameters `json:"set_stainfo,omitempty"`
+}
+
 // Control is a structure containing the TP-link control syntax as
 // described here:
 //
@@ -129,6 +141,7 @@ type Control struct {
 	Context *ControlContext `json:"context,omitempty"`
 	System  *SystemCommands `json:"system,omitempty"`
 	Time    *DevTime        `json:"time,omitempty"`
+	NetIf   *NetIfCommands  `json:"netif,omitempty"`
 }
 
 // GetSysinfo holds the empty request for obtaining Sysinfo from the

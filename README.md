@@ -20,8 +20,8 @@ Reference](https://pkg.go.dev/badge/zappem.net/pub/net/tplinky.svg)](https://pkg
   network, you will need to substitute your network addresses instead
   as you follow along.
 
-To use this device (on already configured devices, see TODO section)
-you can try the following example:
+To use this device (on already configured devices, see [Initial Setup
+section](#initial-setup-section)) you can try the following example:
 
 ```
 $ git clone https://github.com/tinkerator/tplinky.git
@@ -99,10 +99,25 @@ $ ./tple --device=192.168.1.157 --time
 2024/12/17 06:32:29 device time is 2024-12-17 06:32:29 -0800 PST
 ```
 
-## TODO
+## <a name="initial-setup-section"/>Initial Setup
 
-Add some support for initializing the device from a factory
-reset. Notes for this (from a Raspberry Pi, networked via `eth0`):
+When a device is newly unpacked, it comes without
+knowledge of how to connect to your WiFi network. You can use the
+following information to enable it to connect to that network.
+
+When you first plug in the smart plug to a power source, it boots in
+setup mode. You can also return a device to this state with the
+`--factory-reset` command line option. In setup mode, the plug acts as
+WiFi network all of its own. Its SSID is of the form, `TP-LINK_Smart
+Plug_XXYY`. Where `XXYY` is the last 4 hex digits of the plug's MAC
+address. Typically, these are printed on the plug itself
+somewhere. However, in most cases, it is unlikely you will be powering
+up and configuring more than one plug at a time, so you can just use
+your computer to try to connect to some WiFi network with a name like
+this.
+
+From a Rasperry Pi, networked via wired ethernet, you can find and
+connect to the plug's setup network as follows:
 
 ```
 $ sudo -s
@@ -112,13 +127,41 @@ $ sudo -s
 # dhclient wlan0
 ```
 
-JSON to command it to join your local network (after the last command
-here, the device will stop responding to the above ESSID) from a
-Raspberry Pi:
+Alternatively, you can connect from any computer by selecting the WiFi
+network of that name.
+
+To complete this operation you will need three things:
+
+- An alias name for your new plug. Example, `power`.
+- The SSID of your network. Example, `MyWiFi`.
+- The Password to connect to that network. Example, `Passphrase`.
+
+From a computer connected to the `TP-LINK_...` network, run the
+following commands (substituting your detailed parameters as
+appropriate):
 
 ```
-{"netif":{"set_stainfo":{"ssid":"MYSSID","password":"BigSecret","key_type":3}}}
+$ ./tple --scan=192.168.0.0/24
+2000/01/02 12:39:48 192.168.0.1: F0:A7:31:WW:XX:YY on=true  "TP-LINK_Smart Plug_XXYY" #children=0
+$ ./tple --device=192.168.0.1 --set-now
+2024/12/18 13:07:22 device time is 2024-12-18 13:07:21 -0800 PST
+$ ./tple --device=192.168.0.1 --alias="power"
+2024/12/18 13:08:31 192.168.0.1: F0:A7:31:WW:XX:YY on=true  "power" #children=0
+$ ./tple --device=192.168.0.1 --ssid="MyWiFi" --password="Passphrase"
+2024/12/18 13:09:18 reconnect to device via "MyWiFi" WiFi network
+$ 
 ```
+
+If anything goes wrong, the plug will reestablish its `TP-LINK_...`
+network, and you can try again. Note, I've found that it is required
+to set an `--alias` for the networking change to take effect.
+
+As noted above, you can use the `--scan` argument to locate the device
+again from a computer networked to your `MyWiFi` network.
+
+## TODO
+
+Nothing planned.
 
 ## License info
 
