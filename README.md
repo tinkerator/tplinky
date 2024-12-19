@@ -101,9 +101,9 @@ $ ./tple --device=192.168.1.157 --time
 
 ## <a name="initial-setup-section"/>Initial Setup
 
-When a device is newly unpacked, it comes without
-knowledge of how to connect to your WiFi network. You can use the
-following information to enable it to connect to that network.
+When a device is newly unpacked, it has no configuration for
+connecting to your WiFi network. You can use the following information
+to enable fix that.
 
 When you first plug in the smart plug to a power source, it boots in
 setup mode. You can also return a device to this state with the
@@ -123,7 +123,7 @@ connect to the plug's setup network as follows:
 $ sudo -s
 # ifconfig wlan0 up
 # iwlist wlan0 scan | grep ESSID
-# iwconfig wlan0 essid "TP-LINK_Smart Plug_XXXX"
+# iwconfig wlan0 essid "TP-LINK_Smart Plug_XXYY"
 # dhclient wlan0
 ```
 
@@ -142,7 +142,7 @@ appropriate):
 
 ```
 $ ./tple --scan=192.168.0.0/24
-2000/01/02 12:39:48 192.168.0.1: F0:A7:31:WW:XX:YY on=true  "TP-LINK_Smart Plug_XXYY" #children=0
+2024/12/18 13:06:48 192.168.0.1: F0:A7:31:WW:XX:YY on=true  "TP-LINK_Smart Plug_XXYY" #children=0
 $ ./tple --device=192.168.0.1 --set-now
 2024/12/18 13:07:22 device time is 2024-12-18 13:07:21 -0800 PST
 $ ./tple --device=192.168.0.1 --alias="power"
