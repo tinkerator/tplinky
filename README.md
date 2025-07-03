@@ -209,6 +209,18 @@ If anything goes wrong, the plug will reestablish its `TP-LINK_...`
 network, and you can try again. Note, I've found that it is required
 to set an `--alias` for the networking change to take effect.
 
+Sometimes the network you are trying to connect to is not very visible
+from the location you have placed the plug. You can investigate this
+with the `--wifi` command:
+
+```
+$ ./tple --wifi --device=192.168.0.1
+2025/07/03 13:19:48 WiFi scan (WPA3 supported: 1)
+2025/07/03 13:19:48   SSID="MyWiFi"                       KeyType: 3 RSSI=-70  dBm
+2025/07/03 13:19:48   SSID="TheirWiFi"                    KeyType: 3 RSSI=-100 dBm
+...
+```
+
 As noted above, you can use the `--scan` argument to locate the device
 again from a computer networked to your `MyWiFi` network.
 

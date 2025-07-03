@@ -9,6 +9,18 @@ import (
 	"time"
 )
 
+var (
+	// ErrTimeFailed is returned when a call to obtain the time failed.
+	ErrTimeFailed = errors.New("get_time failed")
+
+	// ErrNoEMeter is returned if the target device failed to perform
+	// emeter commands.
+	ErrNoEMeter = errors.New("no emeter responded")
+
+	// ErrNoWiFiScan is returned for a failed wifi scan attempt.
+	ErrNoWiFiScan = errors.New("wifi scan unavailable")
+)
+
 // GetStatus requests the status of the device.
 func (c *Conn) GetStatus() (*Sysinfo, error) {
 	r, err := c.Send(Control{
@@ -48,7 +60,7 @@ type ip4sysinfo struct {
 // devices, returning a map of their current status. The scan is done
 // in parallel. The network is provided in [net.ParseCIDR] format.
 func Scan(network string, timeout time.Duration) (result map[string]*Sysinfo) {
-	result = make(map[string]*Sysinfo)
+	result = make(map[string]*Sysinfo, 2)
 	_, nInfo, err := net.ParseCIDR(network)
 	if err != nil || len(nInfo.Mask) != 4 {
 		return
@@ -72,7 +84,6 @@ func Scan(network string, timeout time.Duration) (result map[string]*Sysinfo) {
 		ip := make([]byte, 4)
 		binary.BigEndian.PutUint32(ip, n)
 		target := net.IP(ip).String()
-
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -168,9 +179,6 @@ func (c *Conn) EnableSocket(on bool, sockets ...int) error {
 	return err
 }
 
-// ErrTimeFailed is returned when a call to obtain the time failed.
-var ErrTimeFailed = errors.New("get_time failed")
-
 // GetTime reads the time from the device.
 func (c *Conn) GetTime() (time.Time, error) {
 	resp, err := c.Send(Control{
@@ -254,9 +262,32 @@ func (c *Conn) SetWiFi(ssid, password string) error {
 	return err
 }
 
-// ErrNoEMeter is returned if the target device failed to perform
-// emeter commands.
-var ErrNoEMeter = errors.New("no emeter responded")
+// ListWiFi gets the list of WiFi Access Points that the device can
+// see. This can be useful for positioning your WiFi Router and or
+// understanding the reliability of different plug placement choices.
+// Less negative RSSI values imply higher signal strength. For
+// example, "-51" is better than "-88".
+func (c *Conn) ListWiFi() (*GetScanInfoResponse, error) {
+	for {
+		resp, err := c.Send(Control{
+			NetIf: &NetIfCommands{
+				GetScanInfo: &GetScanInfoParameters{
+					Refresh: 1,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		if resp.NetIf != nil {
+			if detail := resp.NetIf.GetScanInfoResponse; detail != nil {
+				return detail, nil
+			}
+		}
+		break
+	}
+	return nil, ErrNoWiFiScan
+}
 
 // EMonReset resets the target device's E-Meter values (integrated
 // energy measurement).

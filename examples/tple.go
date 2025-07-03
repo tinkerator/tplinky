@@ -19,7 +19,7 @@ import (
 var (
 	device    = flag.String("device", "", "IP address of target device")
 	scan      = flag.String("scan", "", "summarize state of devices on network: <ip>/<bits>")
-	timeout   = flag.Duration("timeout", 2*time.Second, "how long to wait for device")
+	timeout   = flag.Duration("timeout", 5*time.Second, "how long to wait for device")
 	verbose   = flag.Bool("v", false, "list all status info from devices")
 	on        = flag.Bool("on", false, "set the device to enabled")
 	off       = flag.Bool("off", false, "set the device to disabled")
@@ -34,6 +34,7 @@ var (
 	emon      = flag.Bool("emon", false, "read the current E-Meter status")
 	emonReset = flag.Bool("emon-reset", false, "reset the E-Meter state")
 	poll      = flag.Duration("poll", 0, "polling time interval for E-Meter reads")
+	wifi      = flag.Bool("wifi", false, "show results of WiFi scan")
 )
 
 // status converts a device Sysinfo status into a string.
@@ -87,6 +88,21 @@ func main() {
 	}
 	defer dev.Close()
 
+	if *wifi {
+		data, err := dev.ListWiFi()
+		if err != nil {
+			log.Fatalf("failed to scan WiFi: %v", err)
+		}
+		log.Printf("WiFi scan (WPA3 supported: %d)", data.WPA3Support)
+		for _, ap := range data.APList {
+			if ap.RSSI != 0 {
+				log.Printf("  SSID=%-34q KeyType:%2d RSSI=%-4ddBm", ap.SSID, ap.KeyType, ap.RSSI)
+			} else {
+				log.Printf("  SSID=%-34q KeyType:%2d", ap.SSID, ap.KeyType)
+			}
+		}
+		return
+	}
 	if *ssid != "" {
 		if err := dev.SetWiFi(*ssid, *password); err != nil {
 			log.Fatalf("unable to set WiFi to %q", *ssid)

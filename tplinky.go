@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+// DefaultTimeout is the timeout for successful connections and
+// command sequences with the device.
+var DefaultTimeout = 2 * time.Second
+
 // Int converts a number value into a pointer to this number value.
 func Int(n int) *int {
 	return &n
@@ -140,13 +144,38 @@ type SystemCommands struct {
 // StaInfoParameters holds the arguments to the set_stainfo command.
 type StaInfoParameters struct {
 	SSID     string `json:"ssid"`
-	Password string `json:"password,omitempty"`
-	KeyType  int    `json:"key_type,omitempty"`
+	Password string `json:"password"`
+	KeyType  int    `json:"key_type"`
+}
+
+// GetScanInfoParameters holds the arguments to the get_scaninfo command.
+type GetScanInfoParameters struct {
+	Refresh int `json:"refresh"`
+}
+
+// APEntry holds summary information for a visible WiFi Access Point.
+type APEntry struct {
+	SSID    string `json:"ssid"`
+	KeyType int    `json:"key_type"`
+	RSSI    int    `json:"rssi"`
+}
+
+// GetScanInfoResponse holds the response for a get_scaninfo command.
+type GetScanInfoResponse struct {
+	APList      []*APEntry `json:"ap_list"`
+	WPA3Support int        `json:"wpa3_support"`
+	ErrCode     int        `json:"err_code"`
 }
 
 // NetIfCommands holds net interface commands
 type NetIfCommands struct {
-	SetStaInfo *StaInfoParameters `json:"set_stainfo,omitempty"`
+	SetStaInfo  *StaInfoParameters     `json:"set_stainfo,omitempty"`
+	GetScanInfo *GetScanInfoParameters `json:"get_scaninfo,omitempty"`
+}
+
+// NetIfResponse is used for netif responses
+type NetIfResponse struct {
+	GetScanInfoResponse *GetScanInfoResponse `json:"get_scaninfo,omitempty"`
 }
 
 // Control is a structure containing the TP-link control syntax as
@@ -158,7 +187,7 @@ type Control struct {
 	System  *SystemCommands `json:"system,omitempty"`
 	Time    *DevTime        `json:"time,omitempty"`
 	NetIf   *NetIfCommands  `json:"netif,omitempty"`
-	EMeter  *EMeter         `json:"emeter,ommitempty"`
+	EMeter  *EMeter         `json:"emeter,omitempty"`
 }
 
 // GetSysinfo holds the empty request for obtaining Sysinfo from the
@@ -207,6 +236,7 @@ type SystemResponse struct {
 type Response struct {
 	System *SystemResponse `json:"system,omitempty"`
 	Time   *TimeResponse   `json:"time,omitempty"`
+	NetIf  *NetIfResponse  `json:"netif,omitempty"`
 	EMeter *EMeter         `json:"emeter,omitempty"`
 }
 
@@ -300,9 +330,9 @@ func DialTimeout(target string, timeout time.Duration) (*Conn, error) {
 	}, nil
 }
 
-// Dial the TP-link target with a 2 second dial timeout.
+// Dial the TP-link target with a tplinky.DeftaultTimeout dial timeout.
 func Dial(target string) (*Conn, error) {
-	return DialTimeout(target, 2*time.Second)
+	return DialTimeout(target, DefaultTimeout)
 }
 
 // Send a command to the device and decode the response.
@@ -313,15 +343,24 @@ func (c *Conn) Send(cmd Control) (*Response, error) {
 	}
 	var b bytes.Buffer
 	json.Compact(&b, j)
+	defer c.conn.SetDeadline(time.Time{})
+	c.conn.SetDeadline(time.Now().Add(DefaultTimeout))
 	if _, err := c.conn.Write(Encode(b.Bytes()).Bytes()); err != nil {
 		return nil, err
 	}
-	d := make([]byte, 4096)
-	n, err := c.Read(d)
-	if err != nil {
-		return nil, err
+	var resp []byte
+	d := make([]byte, 1028)
+	for {
+		n, err := c.Read(d)
+		if err != nil {
+			return nil, err
+		}
+		resp = append(resp, d[:n]...)
+		if n != 1028 {
+			break
+		}
 	}
-	x := Decode(d[:n])
+	x := Decode(resp)
 	var r Response
 	if err := json.Unmarshal(x.Bytes(), &r); err != nil {
 		return nil, err
