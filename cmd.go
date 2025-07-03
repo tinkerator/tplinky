@@ -253,3 +253,46 @@ func (c *Conn) SetWiFi(ssid, password string) error {
 	})
 	return err
 }
+
+// ErrNoEMeter is returned if the target device failed to perform
+// emeter commands.
+var ErrNoEMeter = errors.New("no emeter responded")
+
+// EMonReset resets the target device's E-Meter values (integrated
+// energy measurement).
+func (c *Conn) EMonReset() error {
+	resp, err := c.Send(Control{
+		EMeter: &EMeter{
+			EraseEMeterStat: &EMeterResponse{},
+		},
+	})
+	if err != nil {
+		return err
+	}
+	if resp.EMeter == nil || resp.EMeter.EraseEMeterStat == nil {
+		return ErrNoEMeter
+	}
+	if eCode := resp.EMeter.EraseEMeterStat.ErrCode; eCode != 0 {
+		return fmt.Errorf("emeter error %d", eCode)
+	}
+	return nil
+}
+
+// EMonState reads a measurement of the current E-Meter values.
+func (c *Conn) EMonState() (*EMeterResponse, error) {
+	resp, err := c.Send(Control{
+		EMeter: &EMeter{
+			GetRealTime: &EMeterResponse{},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	if resp.EMeter == nil || resp.EMeter.GetRealTime == nil {
+		return nil, ErrNoEMeter
+	}
+	if eCode := resp.EMeter.GetRealTime.ErrCode; eCode != 0 {
+		return nil, fmt.Errorf("emeter error %d", eCode)
+	}
+	return resp.EMeter.GetRealTime, nil
+}

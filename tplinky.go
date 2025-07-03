@@ -1,5 +1,5 @@
-// Package tplinky provides an API for accessing and controlling TP-link smart plug
-// devices.
+// Package tplinky provides an API for accessing and controlling
+// TP-link smart plug devices.
 package tplinky
 
 import (
@@ -106,6 +106,22 @@ type TimeResponse struct {
 	GetTimeZone *TimeZone `json:"get_timezone,omitempty"`
 }
 
+// EMeterResponse is returned from an EMeter request
+type EMeterResponse struct {
+	ErrCode   int `json:"err_code,omitempty"`
+	CurrentMA int `json:"current_ma,omitempty"`
+	VoltageMV int `json:"voltage_mv,omitempty"`
+	PowerMW   int `json:"power_mw,omitempty"`
+	TotalWH   int `json:"total_wh,omitempty"`
+}
+
+// EMeter is used to request E-meter functions and also supports
+// responses.
+type EMeter struct {
+	EraseEMeterStat *EMeterResponse `json:"erase_emeter_stat,omitempty"`
+	GetRealTime     *EMeterResponse `json:"get_realtime,omitempty"`
+}
+
 // SystemCommands holds a superset of the command structure for
 // communicating with the tp-link smartplug device.
 type SystemCommands struct {
@@ -142,6 +158,7 @@ type Control struct {
 	System  *SystemCommands `json:"system,omitempty"`
 	Time    *DevTime        `json:"time,omitempty"`
 	NetIf   *NetIfCommands  `json:"netif,omitempty"`
+	EMeter  *EMeter         `json:"emeter,ommitempty"`
 }
 
 // GetSysinfo holds the empty request for obtaining Sysinfo from the
@@ -190,6 +207,7 @@ type SystemResponse struct {
 type Response struct {
 	System *SystemResponse `json:"system,omitempty"`
 	Time   *TimeResponse   `json:"time,omitempty"`
+	EMeter *EMeter         `json:"emeter,omitempty"`
 }
 
 // Conn holds an open connection to a TP-Link device. It uses the port

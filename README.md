@@ -99,6 +99,59 @@ $ ./tple --device=192.168.1.157 --time
 2024/12/17 06:32:29 device time is 2024-12-17 06:32:29 -0800 PST
 ```
 
+## Energy monitoring
+
+Some of the TPLink devices support monitoring the energy consumption
+stats for the plug. This can be used to monitor devices that are
+plugged in. Not all devices support this feature. The KP110 is one of
+them.
+
+If a device is unable to measure power consumption, the following
+command exits with an error:
+
+```
+$ ./tple --device=192.168.1.157 --emon
+2025/07/02 20:59:46 failed to get E-Monitor state: no emeter responded
+```
+
+If, however, you use the same command on a KP110 device, you will see:
+
+```
+$ ./tple --device=192.168.1.110 --emon
+2025/07/02 20:59:59 0.380A 116.213VAC 26.622W 3WH
+```
+
+Which lists:
+
+- instantaneous current consumption (in Amps)
+- instantaneous voltage detected by the plug (your AC Mains Voltage)
+  - in the US, this should be somewhere in the 120 VAC range.
+- instantaneous power consumption (in Watts)
+- integrated energy consumption since the last `--emon-reset` (in Watt Hours)
+
+That last value can be reset as follows:
+
+```
+$ ./tple --device=192.168.1.110 --emon-reset
+2025/07/02 21:08:51 reset E-Monitor
+```
+
+To watch the power consumption over time, you can combine `--poll` and
+`--emon` arguments as follows:
+
+```
+$ ./tple --device=192.168.1.110 --emon --poll=3s
+2025/07/02 21:10:19 0.254A 115.152VAC 21.481W 0WH
+2025/07/02 21:10:22 0.248A 115.688VAC 19.325W 0WH
+2025/07/02 21:10:25 0.260A 115.444VAC 19.714W 0WH
+2025/07/02 21:10:28 0.259A 115.628VAC 19.667W 0WH
+2025/07/02 21:10:31 0.248A 115.879VAC 19.339W 0WH
+2025/07/02 21:10:34 0.250A 115.818VAC 19.887W 0WH
+^C
+```
+
+Which samples the `--emon` values once every 3 seconds until you kill the program with _Ctrl-C_.
+
 ## <a name="initial-setup-section"/>Initial Setup
 
 When a device is newly unpacked, it has no configuration for

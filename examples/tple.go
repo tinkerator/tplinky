@@ -17,20 +17,23 @@ import (
 )
 
 var (
-	device   = flag.String("device", "", "IP address of target device")
-	scan     = flag.String("scan", "", "summarize state of devices on network: <ip>/<bits>")
-	timeout  = flag.Duration("timeout", 2*time.Second, "how long to wait for device")
-	verbose  = flag.Bool("v", false, "list all status info from devices")
-	on       = flag.Bool("on", false, "set the device to enabled")
-	off      = flag.Bool("off", false, "set the device to disabled")
-	stat     = flag.Bool("status", true, "get device(s) status")
-	sockets  = flag.String("sockets", "", "comma separated socket indexes")
-	getTime  = flag.Bool("time", false, "request time from --device")
-	setNow   = flag.Bool("set-now", false, "set time on --device from time.Now()")
-	alias    = flag.String("alias", "", "set alias for --device")
-	factory  = flag.Bool("factory-reset", false, "factory reset --device")
-	ssid     = flag.String("ssid", "", "sets the WiFi network for --device to connect to")
-	password = flag.String("password", "", "password to connect to --ssid network")
+	device    = flag.String("device", "", "IP address of target device")
+	scan      = flag.String("scan", "", "summarize state of devices on network: <ip>/<bits>")
+	timeout   = flag.Duration("timeout", 2*time.Second, "how long to wait for device")
+	verbose   = flag.Bool("v", false, "list all status info from devices")
+	on        = flag.Bool("on", false, "set the device to enabled")
+	off       = flag.Bool("off", false, "set the device to disabled")
+	stat      = flag.Bool("status", true, "get device(s) status")
+	sockets   = flag.String("sockets", "", "comma separated socket indexes")
+	getTime   = flag.Bool("time", false, "request time from --device")
+	setNow    = flag.Bool("set-now", false, "set time on --device from time.Now()")
+	alias     = flag.String("alias", "", "set alias for --device")
+	factory   = flag.Bool("factory-reset", false, "factory reset --device")
+	ssid      = flag.String("ssid", "", "sets the WiFi network for --device to connect to")
+	password  = flag.String("password", "", "password to connect to --ssid network")
+	emon      = flag.Bool("emon", false, "read the current E-Meter status")
+	emonReset = flag.Bool("emon-reset", false, "reset the E-Meter state")
+	poll      = flag.Duration("poll", 0, "polling time interval for E-Meter reads")
 )
 
 // status converts a device Sysinfo status into a string.
@@ -92,6 +95,14 @@ func main() {
 		return
 	}
 
+	if *emonReset {
+		if err := dev.EMonReset(); err != nil {
+			log.Fatalf("failed to reset E-Monitor: %v", err)
+		}
+		log.Print("reset E-Monitor")
+		return
+	}
+
 	if *factory {
 		s, err := dev.GetStatus()
 		if err != nil {
@@ -128,6 +139,20 @@ func main() {
 			log.Fatalf("unable to get time: %v", err)
 		}
 		log.Printf("device time is %v", t)
+		return
+	}
+	if *emon {
+		for {
+			s, err := dev.EMonState()
+			if err != nil {
+				log.Fatalf("failed to get E-Monitor state: %v", err)
+			}
+			log.Printf("%.3fA %.3fVAC %.3fW %dWH", float64(s.CurrentMA)/1e3, float64(s.VoltageMV)/1e3, float64(s.PowerMW)/1e3, s.TotalWH)
+			if *poll == 0 {
+				break
+			}
+			time.Sleep(*poll)
+		}
 		return
 	}
 	if *on {
