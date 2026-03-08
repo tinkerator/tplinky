@@ -2,8 +2,9 @@
 
 ## Overview
 
-This package provides a Go API for communicating with a
-[tp-link](https://www.tp-link.com/) smartplug device.
+This [package](https://zappem.net/pub/net/tplinky/) provides a Go API
+for communicating with a [tp-link](https://www.tp-link.com/) smartplug
+device.
 
 An in depth discussion of these devices is available here:
 https://www.softscheck.com/en/blog/tp-link-reverse-engineering/ and a
