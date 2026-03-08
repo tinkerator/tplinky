@@ -156,7 +156,7 @@ Which samples the `--emon` values once every 3 seconds until you kill the progra
 
 When a device is newly unpacked, it has no configuration for
 connecting to your WiFi network. You can use the following information
-to enable fix that.
+to fix that.
 
 When you first plug in the smart plug to a power source, it boots in
 setup mode. You can also return a device to this state with the
